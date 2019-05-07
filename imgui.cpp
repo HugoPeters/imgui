@@ -1045,6 +1045,13 @@ static const float WINDOWS_RESIZE_FROM_EDGES_FEEDBACK_TIMER = 0.04f;    // Reduc
 // Docking
 static const float DOCKING_TRANSPARENT_PAYLOAD_ALPHA        = 0.50f;    // For use with io.ConfigDockingTransparentPayload. Apply to Viewport _or_ WindowBg in host viewport.
 
+// Warlock
+namespace ImGui
+{
+    bool WarAllowOnlyMenuBar = true;
+}
+
+
 //-------------------------------------------------------------------------
 // [SECTION] FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
@@ -4181,7 +4188,7 @@ void ImGui::EndFrame()
     if (g.DragDropActive && g.DragDropSourceFrameCount < g.FrameCount)
     {
         g.DragDropWithinSourceOrTarget = true;
-        SetTooltip("...");
+        //SetTooltip("...");
         g.DragDropWithinSourceOrTarget = false;
     }
 
@@ -5333,6 +5340,15 @@ void ImGui::UpdateWindowParentAndRootLinks(ImGuiWindow* window, ImGuiWindowFlags
 // - Passing 'bool* p_open' displays a Close button on the upper-right corner of the window, the pointed value will be set to false when the button is pressed.
 bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 {
+    if (WarAllowOnlyMenuBar)
+    {
+        bool hasMenuBar = (flags & ImGuiWindowFlags_MenuBar) != 0;
+        bool isPopup = (flags & ImGuiWindowFlags_Popup) != 0;
+
+        if (!(strcmp(name, "Debug##Default") == 0 || hasMenuBar || isPopup))
+            return false;
+    }
+
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
     IM_ASSERT(name != NULL && name[0] != '\0');     // Window name required
@@ -6194,6 +6210,12 @@ void ImGui::End()
 {
     ImGuiContext& g = *GImGui;
 
+    if (WarAllowOnlyMenuBar)
+    {
+        if (g.CurrentWindowStack.size() <= 1)
+            return;
+    }
+
     if (g.CurrentWindowStack.Size <= 1 && g.FrameScopePushedImplicitWindow)
     {
         IM_ASSERT(g.CurrentWindowStack.Size > 1 && "Calling End() too many times!");
@@ -6695,6 +6717,7 @@ const char* ImGui::GetStyleColorName(ImGuiCol idx)
     case ImGuiCol_NavWindowingHighlight: return "NavWindowingHighlight";
     case ImGuiCol_NavWindowingDimBg: return "NavWindowingDimBg";
     case ImGuiCol_ModalWindowDimBg: return "ModalWindowDimBg";
+    case ImGuiCol_ButtonIconTint: return "[warlock] ButtonIconTint";
     }
     IM_ASSERT(0);
     return "Unknown";
@@ -13212,13 +13235,13 @@ void ImGui::DockSpace(ImGuiID id, const ImVec2& size_arg, ImGuiDockNodeFlags fla
 // The limitation with this call is that your window won't have a menu bar. 
 // Even though we could pass window flags, it would also require the user to be able to call BeginMenuBar() somehow meaning we can't Begin/End in a single function.
 // So if you want a menu bar you need to repeat this code manually ourselves. As with advanced other Docking API, we may change this function signature.
-ImGuiID ImGui::DockSpaceOverViewport(ImGuiViewport* viewport, ImGuiDockNodeFlags dockspace_flags, const ImGuiWindowClass* window_class)
+ImGuiID ImGui::DockSpaceOverViewport(ImGuiViewport* viewport, ImGuiDockNodeFlags dockspace_flags, const ImGuiWindowClass* window_class, ImVec2 offset)
 {
     if (viewport == NULL)
         viewport = GetMainViewport();
 
-    SetNextWindowPos(viewport->Pos);
-    SetNextWindowSize(viewport->Size);
+    SetNextWindowPos(viewport->Pos + offset);
+    SetNextWindowSize(viewport->Size - offset);
     SetNextWindowViewport(viewport->ID);
 
     ImGuiWindowFlags host_window_flags = 0;
@@ -13230,14 +13253,21 @@ ImGuiID ImGui::DockSpaceOverViewport(ImGuiViewport* viewport, ImGuiDockNodeFlags
     char label[32];
     ImFormatString(label, IM_ARRAYSIZE(label), "DockSpaceViewport_%08X", viewport->ID);
 
+    ImGuiID dockspace_id = -1;
+
     PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    Begin(label, NULL, host_window_flags);
-    PopStyleVar(3);
+    if (Begin(label, NULL, host_window_flags))
+    {
+        PopStyleVar(3);
 
-    ImGuiID dockspace_id = GetID("DockSpace");
-    DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags, window_class);
+        ImGuiID dockspace_id = GetID("DockSpace");
+        DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags, window_class);
+    }
+    else
+        PopStyleVar(3);
+
     End();
 
     return dockspace_id;
