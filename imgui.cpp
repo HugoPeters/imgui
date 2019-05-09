@@ -13262,7 +13262,7 @@ ImGuiID ImGui::DockSpaceOverViewport(ImGuiViewport* viewport, ImGuiDockNodeFlags
     {
         PopStyleVar(3);
 
-        ImGuiID dockspace_id = GetID("DockSpace");
+        dockspace_id = GetID("DockSpace");
         DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags, window_class);
     }
     else
