@@ -6718,6 +6718,7 @@ const char* ImGui::GetStyleColorName(ImGuiCol idx)
     case ImGuiCol_NavWindowingDimBg: return "NavWindowingDimBg";
     case ImGuiCol_ModalWindowDimBg: return "ModalWindowDimBg";
     case ImGuiCol_ButtonIconTint: return "[warlock] ButtonIconTint";
+    case ImGuiCol_ButtonIconTintDisabled: return "[warlock] ButtonIconTintDisabled";
     }
     IM_ASSERT(0);
     return "Unknown";
