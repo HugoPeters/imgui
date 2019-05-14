@@ -5139,6 +5139,10 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
 
     bool hovered, held;
     bool pressed = ButtonBehavior(interact_bb, id, &hovered, &held, button_flags);
+
+    if ((flags & ImGuiTreeNodeFlags_DisableHover) != 0)
+        hovered = false;
+
     bool toggled = false;
     if (!is_leaf)
     {
