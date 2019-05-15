@@ -5340,7 +5340,9 @@ void ImGui::UpdateWindowParentAndRootLinks(ImGuiWindow* window, ImGuiWindowFlags
 // - Passing 'bool* p_open' displays a Close button on the upper-right corner of the window, the pointed value will be set to false when the button is pressed.
 bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 {
-    if (WarAllowOnlyMenuBar)
+    const bool ignoreWarlockHost = (flags & ImGuiWindowFlags_IgnoreWarlockHost) != 0;
+
+    if (WarAllowOnlyMenuBar && !ignoreWarlockHost)
     {
         bool hasMenuBar = (flags & ImGuiWindowFlags_MenuBar) != 0;
         bool isPopup = (flags & ImGuiWindowFlags_Popup) != 0;
@@ -6210,7 +6212,11 @@ void ImGui::End()
 {
     ImGuiContext& g = *GImGui;
 
-    if (WarAllowOnlyMenuBar)
+    ImGuiWindow* window = g.CurrentWindow;
+
+    const bool ignoreWarlockHost = window ? ((window->Flags & ImGuiWindowFlags_IgnoreWarlockHost) != 0) : false;
+
+    if (WarAllowOnlyMenuBar && !ignoreWarlockHost)
     {
         if (g.CurrentWindowStack.size() <= 1)
             return;
@@ -6222,8 +6228,6 @@ void ImGui::End()
         return; // FIXME-ERRORHANDLING
     }
     IM_ASSERT(g.CurrentWindowStack.Size > 0);
-
-    ImGuiWindow* window = g.CurrentWindow;
 
     if (window->DC.CurrentColumns != NULL)
         EndColumns();
