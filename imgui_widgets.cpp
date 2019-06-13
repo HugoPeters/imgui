@@ -5077,6 +5077,7 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
     const ImGuiStyle& style = g.Style;
     const bool display_frame = (flags & ImGuiTreeNodeFlags_Framed) != 0;
     const ImVec2 padding = (display_frame || (flags & ImGuiTreeNodeFlags_FramePadding)) ? style.FramePadding : ImVec2(style.FramePadding.x, 0.0f);
+    const bool makeItemSize = (flags & ImGuiTreeNodeFlags_ConformItemSize) != 0;
 
     if (!label_end)
         label_end = FindRenderedTextEnd(label);
@@ -5085,7 +5086,8 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
     // We vertically grow up to current line height up the typical widget height.
     const float text_base_offset_y = ImMax(padding.y, window->DC.CurrentLineTextBaseOffset); // Latch before ItemSize changes it
     const float frame_height = ImMax(ImMin(window->DC.CurrentLineSize.y, g.FontSize + style.FramePadding.y*2), label_size.y + padding.y*2) + frameSizeOffset.y;
-    ImRect frame_bb = ImRect(window->DC.CursorPos, ImVec2(GetWorkRectMax().x + frameSizeOffset.x, window->DC.CursorPos.y + frame_height));
+    const float frame_max_x = makeItemSize ? window->DC.CursorPos.x + window->DC.ItemWidth : window->ContentsRegionRect.Max.x;
+    ImRect frame_bb = ImRect(window->DC.CursorPos, ImVec2(frame_max_x + frameSizeOffset.x, window->DC.CursorPos.y + frame_height));
     if (display_frame)
     {
         // Framed header expand a little outside the default padding
@@ -5095,7 +5097,11 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
 
     const float text_offset_x = (g.FontSize + (display_frame ? padding.x*3 : padding.x*2));   // Collapser arrow width + Spacing
     const float text_width = g.FontSize + (label_size.x > 0.0f ? label_size.x + padding.x*2 : 0.0f);   // Include collapser
-    ItemSize(ImVec2(text_width, frame_height), text_base_offset_y);
+
+    if (!makeItemSize)
+        ItemSize(ImVec2(text_width, frame_height), text_base_offset_y);
+    else
+        ItemSize(ImVec2(frame_bb.GetWidth(), frame_bb.GetHeight()), text_base_offset_y);
 
     // For regular tree nodes, we arbitrary allow to click past 2 worth of ItemSpacing
     // (Ideally we'd want to add a flag for the user to specify if we want the hit test to be done up to the right side of the content or not)
