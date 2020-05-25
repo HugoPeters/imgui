@@ -9,6 +9,7 @@
 //  [X] Platform: Multi-viewport support (multiple windows). Enable with 'io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable'.
 
 #ifdef PLATFORM_WIN
+#ifndef USING_SDL
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
@@ -834,4 +835,5 @@ static void ImGui_ImplWin32_ShutdownPlatformInterface()
     ::UnregisterClass(_T("ImGui Platform"), ::GetModuleHandle(NULL));
 }
 
+#endif // USING_SDL
 #endif // PLATFORM_WIN
