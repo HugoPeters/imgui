@@ -19,6 +19,9 @@
 #include <windows.h>
 #include <XInput.h>
 #include <tchar.h>
+#include "C_KeyboardKeys.h"
+#include "C_Keyboard.h"
+#include "C_OS.h"
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
@@ -80,27 +83,27 @@ bool    ImGui_ImplWin32_Init(void* hwnd)
         ImGui_ImplWin32_InitPlatformInterface();
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
-    io.KeyMap[ImGuiKey_Tab] = VK_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = VK_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
-    io.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
-    io.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
-    io.KeyMap[ImGuiKey_Home] = VK_HOME;
-    io.KeyMap[ImGuiKey_End] = VK_END;
-    io.KeyMap[ImGuiKey_Insert] = VK_INSERT;
-    io.KeyMap[ImGuiKey_Delete] = VK_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = VK_BACK;
-    io.KeyMap[ImGuiKey_Space] = VK_SPACE;
-    io.KeyMap[ImGuiKey_Enter] = VK_RETURN;
-    io.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = 'A';
-    io.KeyMap[ImGuiKey_C] = 'C';
-    io.KeyMap[ImGuiKey_V] = 'V';
-    io.KeyMap[ImGuiKey_X] = 'X';
-    io.KeyMap[ImGuiKey_Y] = 'Y';
-    io.KeyMap[ImGuiKey_Z] = 'Z';
+    io.KeyMap[ImGuiKey_Tab] = C_Keys::KEY_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = C_Keys::KEY_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = C_Keys::KEY_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = C_Keys::KEY_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = C_Keys::KEY_DOWN;
+    io.KeyMap[ImGuiKey_PageUp] = 0;
+    io.KeyMap[ImGuiKey_PageDown] = 0;
+    io.KeyMap[ImGuiKey_Home] = 0;
+    io.KeyMap[ImGuiKey_End] = 0;
+    io.KeyMap[ImGuiKey_Insert] = 0;
+    io.KeyMap[ImGuiKey_Delete] = C_Keys::KEY_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = C_Keys::KEY_BACKSPACE;
+    io.KeyMap[ImGuiKey_Space] = C_Keys::KEY_SPACEBAR;
+    io.KeyMap[ImGuiKey_Enter] = C_Keys::KEY_ENTER;
+    io.KeyMap[ImGuiKey_Escape] = C_Keys::KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = C_Keys::KEY_A;
+    io.KeyMap[ImGuiKey_C] = C_Keys::KEY_B;
+    io.KeyMap[ImGuiKey_V] = C_Keys::KEY_V;
+    io.KeyMap[ImGuiKey_X] = C_Keys::KEY_X;
+    io.KeyMap[ImGuiKey_Y] = C_Keys::KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = C_Keys::KEY_Z;
 
     return true;
 }
@@ -272,10 +275,17 @@ void    ImGui_ImplWin32_NewFrame()
     g_Time = current_time;
 
     // Read keyboard modifiers inputs
-    io.KeyCtrl = (::GetKeyState(VK_CONTROL) & 0x8000) != 0;
-    io.KeyShift = (::GetKeyState(VK_SHIFT) & 0x8000) != 0;
-    io.KeyAlt = (::GetKeyState(VK_MENU) & 0x8000) != 0;
+    C_OS_KeyboardState kbState;
+    C_OS::GetInstance()->GetKeyboardState(kbState);
+
+    io.KeyCtrl = kbState.mKeys[C_Keys::KEY_CTRL];
+    io.KeyShift = kbState.mKeys[C_Keys::KEY_SHIFT];
+    io.KeyAlt = kbState.mKeys[C_Keys::KEY_ALT];
     io.KeySuper = false;
+
+    for (int i = 0; i < C_Keys::COUNT; ++i)
+        io.KeysDown[i] = kbState.mKeys[i];
+
     // io.KeysDown[], io.MousePos, io.MouseDown[], io.MouseWheel: filled by the WndProc handler below.
 
     // Update OS mouse position
@@ -352,16 +362,16 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
     case WM_MOUSEHWHEEL:
         io.MouseWheelH += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
         return 0;
-    case WM_KEYDOWN:
-    case WM_SYSKEYDOWN:
-        if (wParam < 256)
-            io.KeysDown[wParam] = 1;
-        return 0;
-    case WM_KEYUP:
-    case WM_SYSKEYUP:
-        if (wParam < 256)
-            io.KeysDown[wParam] = 0;
-        return 0;
+    //case WM_KEYDOWN:
+    //case WM_SYSKEYDOWN:
+    //    if (wParam < 256)
+    //        io.KeysDown[wParam] = 1;
+    //    return 0;
+    //case WM_KEYUP:
+    //case WM_SYSKEYUP:
+    //    if (wParam < 256)
+    //        io.KeysDown[wParam] = 0;
+    //    return 0;
     case WM_CHAR:
         // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
         if (wParam > 0 && wParam < 0x10000)

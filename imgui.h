@@ -1166,6 +1166,7 @@ enum ImGuiStyleVar_
     ImGuiStyleVar_PopupRounding,       // float     PopupRounding
     ImGuiStyleVar_PopupBorderSize,     // float     PopupBorderSize
     ImGuiStyleVar_FramePadding,        // ImVec2    FramePadding
+    ImGuiStyleVar_FramePaddingCheckbox,// ImVec2    FramePadding
     ImGuiStyleVar_FrameRounding,       // float     FrameRounding
     ImGuiStyleVar_FrameBorderSize,     // float     FrameBorderSize
     ImGuiStyleVar_ItemSpacing,         // ImVec2    ItemSpacing
@@ -1366,6 +1367,7 @@ struct ImGuiStyle
     float       PopupRounding;              // Radius of popup window corners rounding. (Note that tooltip windows use WindowRounding)
     float       PopupBorderSize;            // Thickness of border around popup/tooltip windows. Generally set to 0.0f or 1.0f. (Other values are not well tested and more CPU/GPU costly).
     ImVec2      FramePadding;               // Padding within a framed rectangle (used by most widgets).
+    ImVec2      FramePaddingCheckbox;       // Padding within a framed rectangle (used by most widgets).
     float       FrameRounding;              // Radius of frame corners rounding. Set to 0.0f to have rectangular frame (used by most widgets).
     float       FrameBorderSize;            // Thickness of border around frames. Generally set to 0.0f or 1.0f. (Other values are not well tested and more CPU/GPU costly).
     ImVec2      ItemSpacing;                // Horizontal and vertical spacing between widgets/lines.
