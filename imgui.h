@@ -1132,7 +1132,10 @@ enum ImGuiTableFlags_
     ImGuiTableFlags_ScrollY                         = 1 << 25,  // Enable vertical scrolling. Require 'outer_size' parameter of BeginTable() to specify the container size.
 
     // [Internal] Combinations and masks
-    ImGuiTableFlags_SizingPolicyMaskX_              = ImGuiTableFlags_SizingPolicyStretchX | ImGuiTableFlags_SizingPolicyFixedX
+    ImGuiTableFlags_SizingPolicyMaskX_              = ImGuiTableFlags_SizingPolicyStretchX | ImGuiTableFlags_SizingPolicyFixedX,
+
+    // Warlock
+    ImGuiTableFlags_CenterHeaders                   = 1 << 26
 };
 
 // Flags for ImGui::TableSetupColumn()

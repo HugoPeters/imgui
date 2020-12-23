@@ -10677,6 +10677,11 @@ void    ImGui::TableHeader(const char* label)
     ImRect cell_r = TableGetCellBgRect(table, column_n);
     float label_height = ImMax(label_size.y, table->RowMinHeight - table->CellPaddingY * 2.0f);
 
+    if ((table->Flags & ImGuiTableFlags_CenterHeaders) != 0)
+    {
+        label_pos.x = cell_r.GetCenter().x - label_size.x / 2.f;
+    }
+
     // Keep header highlighted when context menu is open.
     const bool selected = (table->IsContextPopupOpen && table->ContextPopupColumn == column_n && table->InstanceInteracted == table->InstanceCurrent);
     ImGuiID id = window->GetID(label);

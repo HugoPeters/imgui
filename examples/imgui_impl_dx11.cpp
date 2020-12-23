@@ -32,22 +32,30 @@
 #include <stdio.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
+#include "RC_RenderCore.h"
 #ifdef _MSC_VER
 #pragma comment(lib, "d3dcompiler") // Automatically link with d3dcompiler.lib as we are using D3DCompile() below.
 #endif
 
 // DirectX data
+enum IMGUI_SHADER_VARIATION
+{
+    IMGUI_LINEAR,
+    IMGUI_SRGB,
+    IMGUI_NUM_SHADERS
+};
+
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
 static IDXGIFactory*            g_pFactory = NULL;
 static ID3D11Buffer*            g_pVB = NULL;
 static ID3D11Buffer*            g_pIB = NULL;
-static ID3D10Blob*              g_pVertexShaderBlob = NULL;
-static ID3D11VertexShader*      g_pVertexShader = NULL;
-static ID3D11InputLayout*       g_pInputLayout = NULL;
+static ID3D10Blob*              g_pVertexShaderBlob[IMGUI_NUM_SHADERS] = { NULL, NULL };
+static ID3D11VertexShader*      g_pVertexShader[IMGUI_NUM_SHADERS] = { NULL, NULL };
+static ID3D11InputLayout*       g_pInputLayout[IMGUI_NUM_SHADERS] = { NULL, NULL };
 static ID3D11Buffer*            g_pVertexConstantBuffer = NULL;
-static ID3D10Blob*              g_pPixelShaderBlob = NULL;
-static ID3D11PixelShader*       g_pPixelShader = NULL;
+static ID3D10Blob*              g_pPixelShaderBlob[IMGUI_NUM_SHADERS] = { NULL, NULL };
+static ID3D11PixelShader*       g_pPixelShader[IMGUI_NUM_SHADERS] = { NULL, NULL };
 static ID3D11SamplerState*      g_pFontSampler = NULL;
 static ID3D11ShaderResourceView*g_pFontTextureView = NULL;
 static ID3D11RasterizerState*   g_pRasterizerState = NULL;
@@ -64,8 +72,30 @@ struct VERTEX_CONSTANT_BUFFER
 static void ImGui_ImplDX11_InitPlatformInterface();
 static void ImGui_ImplDX11_ShutdownPlatformInterface();
 
+namespace ImGui_ImplDX11_Private
+{
+    ID3D11InputLayout* ChooseInputLayout()
+    {
+        bool use_srgb = RC_RenderCore::GetInstance()->UseSRGB();
+        return g_pInputLayout[use_srgb ? IMGUI_SRGB : IMGUI_LINEAR];
+    }
+
+    ID3D11VertexShader* ChooseVertexShader()
+    {
+        bool use_srgb = RC_RenderCore::GetInstance()->UseSRGB();
+        return g_pVertexShader[use_srgb ? IMGUI_SRGB : IMGUI_LINEAR];
+    }
+
+    ID3D11PixelShader* ChoosePixelShader()
+    {
+        return g_pPixelShader[IMGUI_LINEAR]; // always begin with linear pixel shader
+    }
+}
+
 static void ImGui_ImplDX11_SetupRenderState(ImDrawData* draw_data, ID3D11DeviceContext* ctx)
 {
+    using namespace ImGui_ImplDX11_Private;
+
     // Setup viewport
     D3D11_VIEWPORT vp;
     memset(&vp, 0, sizeof(D3D11_VIEWPORT));
@@ -79,13 +109,13 @@ static void ImGui_ImplDX11_SetupRenderState(ImDrawData* draw_data, ID3D11DeviceC
     // Setup shader and vertex buffers
     unsigned int stride = sizeof(ImDrawVert);
     unsigned int offset = 0;
-    ctx->IASetInputLayout(g_pInputLayout);
+    ctx->IASetInputLayout(ChooseInputLayout());
     ctx->IASetVertexBuffers(0, 1, &g_pVB, &stride, &offset);
     ctx->IASetIndexBuffer(g_pIB, sizeof(ImDrawIdx) == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0);
     ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    ctx->VSSetShader(g_pVertexShader, NULL, 0);
+    ctx->VSSetShader(ChooseVertexShader(), NULL, 0);
     ctx->VSSetConstantBuffers(0, 1, &g_pVertexConstantBuffer);
-    ctx->PSSetShader(g_pPixelShader, NULL, 0);
+    ctx->PSSetShader(ChoosePixelShader(), NULL, 0);
     ctx->PSSetSamplers(0, 1, &g_pFontSampler);
 
     // Setup blend state
@@ -99,6 +129,8 @@ static void ImGui_ImplDX11_SetupRenderState(ImDrawData* draw_data, ID3D11DeviceC
 // (this used to be set in io.RenderDrawListsFn and called by ImGui::Render(), but you can now call this directly from your main loop)
 void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
 {
+    using namespace ImGui_ImplDX11_Private;
+
     // Avoid rendering when minimized
     if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
         return;
@@ -224,6 +256,9 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
     int vtx_offset = 0;
     int idx_offset = 0;
     ImVec2 clip_off = draw_data->DisplayPos;
+    ID3D11PixelShader* cur_shader = ChoosePixelShader();
+    bool use_srgb = RC_RenderCore::GetInstance()->UseSRGB();
+
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
@@ -247,6 +282,33 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
 
                 // Bind texture, Draw
                 ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+
+                if (texture_srv && use_srgb)
+                {
+                    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+                    texture_srv->GetDesc(&srvDesc);
+                    bool isSRGB = false;
+                    switch (srvDesc.Format)
+                    {
+                        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: isSRGB = true;
+                        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB: isSRGB = true;
+                        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: isSRGB = true;
+                        case DXGI_FORMAT_BC1_UNORM_SRGB: isSRGB = true;
+                        case DXGI_FORMAT_BC2_UNORM_SRGB: isSRGB = true;
+                        case DXGI_FORMAT_BC3_UNORM_SRGB: isSRGB = true;
+                        case DXGI_FORMAT_BC7_UNORM_SRGB: isSRGB = true;
+                    }
+
+                    // if targeting sRGB and the texture is already in sRGB, we just use linear shader.
+                    // if targeting sRGB and the texture is linear, we convert it to sRGB here.
+                    ID3D11PixelShader* target_shader = isSRGB ? g_pPixelShader[IMGUI_LINEAR] : g_pPixelShader[IMGUI_SRGB];
+                    if (target_shader != cur_shader)
+                    {
+                        cur_shader = target_shader;
+                        ctx->PSSetShader(target_shader, NULL, 0);
+                    }
+                }
+
                 ctx->PSSetShaderResources(0, 1, &texture_srv);
                 ctx->DrawIndexed(pcmd->ElemCount, idx_offset, vtx_offset);
             }
@@ -335,6 +397,8 @@ static void ImGui_ImplDX11_CreateFontsTexture()
 
 bool    ImGui_ImplDX11_CreateDeviceObjects()
 {
+    using namespace ImGui_ImplDX11_Private;
+
     if (!g_pd3dDevice)
         return false;
     if (g_pFontSampler)
@@ -348,7 +412,7 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
 
     // Create the vertex shader
     {
-        static const char* vertexShader =
+        static const char* vertexShaderLinear =
             "cbuffer vertexBuffer : register(b0) \
             {\
             float4x4 ProjectionMatrix; \
@@ -376,21 +440,54 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
             return output;\
             }";
 
-        D3DCompile(vertexShader, strlen(vertexShader), NULL, NULL, NULL, "main", "vs_4_0", 0, 0, &g_pVertexShaderBlob, NULL);
-        if (g_pVertexShaderBlob == NULL) // NB: Pass ID3D10Blob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
-            return false;
-        if (g_pd3dDevice->CreateVertexShader((DWORD*)g_pVertexShaderBlob->GetBufferPointer(), g_pVertexShaderBlob->GetBufferSize(), NULL, &g_pVertexShader) != S_OK)
-            return false;
+        static const char* vertexShaderSRGB =
+            "cbuffer vertexBuffer : register(b0) \
+            {\
+            float4x4 ProjectionMatrix; \
+            };\
+            struct VS_INPUT\
+            {\
+            float2 pos : POSITION;\
+            float4 col : COLOR0;\
+            float2 uv  : TEXCOORD0;\
+            };\
+            \
+            struct PS_INPUT\
+            {\
+            float4 pos : SV_POSITION;\
+            float4 col : COLOR0;\
+            float2 uv  : TEXCOORD0;\
+            };\
+            \
+            PS_INPUT main(VS_INPUT input)\
+            {\
+            PS_INPUT output;\
+            output.pos = mul( ProjectionMatrix, float4(input.pos.xy, 0.f, 1.f));\
+            output.col = float4(pow(input.col.xyz, 2.2), input.col.w);\
+            output.uv  = input.uv;\
+            return output;\
+            }";
 
-        // Create the input layout
-        D3D11_INPUT_ELEMENT_DESC local_layout[] =
+        const char* vertexShaders[IMGUI_NUM_SHADERS] = { vertexShaderLinear, vertexShaderSRGB };
+
+        for (int i = 0; i < IMGUI_NUM_SHADERS; ++i)
         {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,   0, (size_t)(&((ImDrawVert*)0)->pos), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, (size_t)(&((ImDrawVert*)0)->uv),  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (size_t)(&((ImDrawVert*)0)->col), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        };
-        if (g_pd3dDevice->CreateInputLayout(local_layout, 3, g_pVertexShaderBlob->GetBufferPointer(), g_pVertexShaderBlob->GetBufferSize(), &g_pInputLayout) != S_OK)
-            return false;
+            D3DCompile(vertexShaders[i], strlen(vertexShaders[i]), NULL, NULL, NULL, "main", "vs_4_0", 0, 0, &g_pVertexShaderBlob[i], NULL);
+            if (g_pVertexShaderBlob[i] == NULL) // NB: Pass ID3D10Blob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
+                return false;
+            if (g_pd3dDevice->CreateVertexShader((DWORD*)g_pVertexShaderBlob[i]->GetBufferPointer(), g_pVertexShaderBlob[i]->GetBufferSize(), NULL, &g_pVertexShader[i]) != S_OK)
+                return false;
+
+            // Create the input layout
+            D3D11_INPUT_ELEMENT_DESC local_layout[] =
+            {
+                { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,   0, (size_t)(&((ImDrawVert*)0)->pos), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, (size_t)(&((ImDrawVert*)0)->uv),  D3D11_INPUT_PER_VERTEX_DATA, 0 },
+                { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (size_t)(&((ImDrawVert*)0)->col), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            };
+            if (g_pd3dDevice->CreateInputLayout(local_layout, 3, g_pVertexShaderBlob[i]->GetBufferPointer(), g_pVertexShaderBlob[i]->GetBufferSize(), &g_pInputLayout[i]) != S_OK)
+                return false;
+        }
 
         // Create the constant buffer
         {
@@ -418,15 +515,38 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
             \
             float4 main(PS_INPUT input) : SV_Target\
             {\
-            float4 out_col = input.col * texture0.Sample(sampler0, input.uv); \
+            float4 tex_col = texture0.Sample(sampler0, input.uv);\
+            float4 out_col = input.col * tex_col; \
             return out_col; \
             }";
 
-        D3DCompile(pixelShader, strlen(pixelShader), NULL, NULL, NULL, "main", "ps_4_0", 0, 0, &g_pPixelShaderBlob, NULL);
-        if (g_pPixelShaderBlob == NULL)  // NB: Pass ID3D10Blob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
-            return false;
-        if (g_pd3dDevice->CreatePixelShader((DWORD*)g_pPixelShaderBlob->GetBufferPointer(), g_pPixelShaderBlob->GetBufferSize(), NULL, &g_pPixelShader) != S_OK)
-            return false;
+        static const char* pixelShaderLinearToSRGB =
+            "struct PS_INPUT\
+            {\
+            float4 pos : SV_POSITION;\
+            float4 col : COLOR0;\
+            float2 uv  : TEXCOORD0;\
+            };\
+            sampler sampler0;\
+            Texture2D texture0;\
+            \
+            float4 main(PS_INPUT input) : SV_Target\
+            {\
+            float4 tex_col = texture0.Sample(sampler0, input.uv);\
+            float4 out_col = input.col * float4(pow(tex_col.xyz, 2.2), tex_col.w); \
+            return out_col; \
+            }";
+
+        const char* pixelShaders[IMGUI_NUM_SHADERS] = { pixelShader, pixelShaderLinearToSRGB };
+
+        for (int i = 0; i < IMGUI_NUM_SHADERS; ++i)
+        {
+            D3DCompile(pixelShaders[i], strlen(pixelShaders[i]), NULL, NULL, NULL, "main", "ps_4_0", 0, 0, &g_pPixelShaderBlob[i], NULL);
+            if (g_pPixelShaderBlob == NULL)  // NB: Pass ID3D10Blob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
+                return false;
+            if (g_pd3dDevice->CreatePixelShader((DWORD*)g_pPixelShaderBlob[i]->GetBufferPointer(), g_pPixelShaderBlob[i]->GetBufferSize(), NULL, &g_pPixelShader[i]) != S_OK)
+                return false;
+        }
     }
 
     // Create the blending setup
@@ -488,12 +608,17 @@ void    ImGui_ImplDX11_InvalidateDeviceObjects()
     if (g_pBlendState) { g_pBlendState->Release(); g_pBlendState = NULL; }
     if (g_pDepthStencilState) { g_pDepthStencilState->Release(); g_pDepthStencilState = NULL; }
     if (g_pRasterizerState) { g_pRasterizerState->Release(); g_pRasterizerState = NULL; }
-    if (g_pPixelShader) { g_pPixelShader->Release(); g_pPixelShader = NULL; }
-    if (g_pPixelShaderBlob) { g_pPixelShaderBlob->Release(); g_pPixelShaderBlob = NULL; }
+
+    for (int i = 0; i < IMGUI_NUM_SHADERS; ++i)
+    {
+        if (g_pPixelShader[i]) { g_pPixelShader[i]->Release(); g_pPixelShader[i] = NULL; }
+        if (g_pPixelShaderBlob[i]) { g_pPixelShaderBlob[i]->Release(); g_pPixelShaderBlob[i] = NULL; }
+        if (g_pInputLayout[i]) { g_pInputLayout[i]->Release(); g_pInputLayout[i] = NULL; }
+        if (g_pVertexShader[i]) { g_pVertexShader[i]->Release(); g_pVertexShader[i] = NULL; }
+        if (g_pVertexShaderBlob[i]) { g_pVertexShaderBlob[i]->Release(); g_pVertexShaderBlob[i] = NULL; }
+    }
+
     if (g_pVertexConstantBuffer) { g_pVertexConstantBuffer->Release(); g_pVertexConstantBuffer = NULL; }
-    if (g_pInputLayout) { g_pInputLayout->Release(); g_pInputLayout = NULL; }
-    if (g_pVertexShader) { g_pVertexShader->Release(); g_pVertexShader = NULL; }
-    if (g_pVertexShaderBlob) { g_pVertexShaderBlob->Release(); g_pVertexShaderBlob = NULL; }
 }
 
 bool    ImGui_ImplDX11_Init(ID3D11Device* device, ID3D11DeviceContext* device_context)
@@ -570,7 +695,7 @@ static void ImGui_ImplDX11_CreateWindow(ImGuiViewport* viewport)
     ZeroMemory(&sd, sizeof(sd));
     sd.BufferDesc.Width = (UINT)viewport->Size.x;
     sd.BufferDesc.Height = (UINT)viewport->Size.y;
-    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
