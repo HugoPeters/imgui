@@ -973,6 +973,7 @@ enum ImGuiInputTextFlags_
     ImGuiInputTextFlags_NoMarkEdited        = 1 << 21,   // For internal use by functions using InputText() before reformatting data
 
     ImGuiInputTextFlags_WkNoEnterConfirm    = 1 << 22,  // Disable enter to stop typing
+    ImGuiInputTextFlags_WkNoClearActiveOnEnter    = 1 << 23,  // Disable focus loss of widget on enter
 };
 
 // Flags for ImGui::TreeNodeEx(), ImGui::CollapsingHeader*()

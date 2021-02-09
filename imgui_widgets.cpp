@@ -4108,7 +4108,12 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
             bool ctrl_enter_for_new_line = (flags & ImGuiInputTextFlags_CtrlEnterForNewLine) != 0;
             if ((!is_multiline && !wk_no_enter) || (ctrl_enter_for_new_line && !io.KeyCtrl) || (!ctrl_enter_for_new_line && io.KeyCtrl))
             {
-                enter_pressed = clear_active_id = true;
+                enter_pressed = true;
+
+                if ((flags & ImGuiInputTextFlags_WkNoClearActiveOnEnter) == 0)
+                {
+                    clear_active_id = true;
+                }
             }
             else if (!is_readonly)
             {
