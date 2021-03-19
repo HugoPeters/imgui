@@ -11494,7 +11494,8 @@ static void ImGui::UpdateSelectWindowViewport(ImGuiWindow* window)
         }
     }
 
-    bool lock_viewport = false;
+    bool lock_viewport = (flags & ImGuiWindowFlags_LockViewport) != 0;
+
     if (g.NextWindowData.Flags & ImGuiNextWindowDataFlags_HasViewport)
     {
         // Code explicitly request a viewport

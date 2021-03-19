@@ -938,7 +938,8 @@ enum ImGuiWindowFlags_
     ImGuiWindowFlags_ChildMenu              = 1 << 28,  // Don't use! For internal use by BeginMenu()
     ImGuiWindowFlags_DockNodeHost           = 1 << 29,  // Don't use! For internal use by Begin()/NewFrame()
 
-    ImGuiWindowFlags_IgnoreWarlockHost      = 1 << 30
+    ImGuiWindowFlags_IgnoreWarlockHost      = 1 << 30,
+    ImGuiWindowFlags_LockViewport           = 1 << 31,
 
     // [Obsolete]
     //ImGuiWindowFlags_ResizeFromAnySide    = 1 << 17,  // --> Set io.ConfigWindowsResizeFromEdges=true and make sure mouse cursors are supported by backend (io.BackendFlags & ImGuiBackendFlags_HasMouseCursors)
