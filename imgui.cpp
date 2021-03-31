@@ -13485,6 +13485,9 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
     BeginTabBarEx(tab_bar, tab_bar_rect, tab_bar_flags, node);
     //host_window->DrawList->AddRect(tab_bar_rect.Min, tab_bar_rect.Max, IM_COL32(255,0,255,255));
 
+    if (node->TabBarCallbacks[ImGuiDockNodeTabBarCallback_PreTabs])
+        node->TabBarCallbacks[ImGuiDockNodeTabBarCallback_PreTabs](node);
+
     // Submit actual tabs
     node->VisibleWindow = NULL;
     for (int window_n = 0; window_n < node->Windows.Size; window_n++)
@@ -13516,6 +13519,9 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
                 host_window->NavLastIds[1] = window->ID;
         }
     }
+
+    if (node->TabBarCallbacks[ImGuiDockNodeTabBarCallback_PostTabs])
+        node->TabBarCallbacks[ImGuiDockNodeTabBarCallback_PostTabs](node);
 
     // Notify root of visible window (used to display title in OS task bar)
     if (node->VisibleWindow)
