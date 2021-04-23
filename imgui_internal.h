@@ -1194,7 +1194,7 @@ struct ImGuiDockNode
     ImGuiDockNode*          ChildNodes[2];              // [Split node only] Child nodes (left/right or top/bottom). Consider switching to an array.
     ImVector<ImGuiWindow*>  Windows;                    // Note: unordered list! Iterate TabBar->Tabs for user-order.
     ImGuiTabBar*            TabBar;
-    function<void(ImGuiDockNode*)>        TabBarCallbacks[ImGuiDockNodeTabBarCallback_NumCallbacks];
+    std::function<void(ImGuiDockNode*)>        TabBarCallbacks[ImGuiDockNodeTabBarCallback_NumCallbacks];
     ImVec2                  Pos;                        // Current position
     ImVec2                  Size;                       // Current size
     ImVec2                  SizeRef;                    // [Split node only] Last explicitly written-to size (overridden when using a splitter affecting the node), used to calculate Size.
