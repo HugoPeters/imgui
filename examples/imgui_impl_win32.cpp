@@ -83,27 +83,27 @@ bool    ImGui_ImplWin32_Init(void* hwnd)
         ImGui_ImplWin32_InitPlatformInterface();
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
-    io.KeyMap[ImGuiKey_Tab] = C_Keys::KEY_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = C_Keys::KEY_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = C_Keys::KEY_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = C_Keys::KEY_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = C_Keys::KEY_DOWN;
-    io.KeyMap[ImGuiKey_PageUp] = 0;
-    io.KeyMap[ImGuiKey_PageDown] = 0;
-    io.KeyMap[ImGuiKey_Home] = 0;
-    io.KeyMap[ImGuiKey_End] = 0;
-    io.KeyMap[ImGuiKey_Insert] = 0;
-    io.KeyMap[ImGuiKey_Delete] = C_Keys::KEY_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = C_Keys::KEY_BACKSPACE;
-    io.KeyMap[ImGuiKey_Space] = C_Keys::KEY_SPACEBAR;
-    io.KeyMap[ImGuiKey_Enter] = C_Keys::KEY_ENTER;
-    io.KeyMap[ImGuiKey_Escape] = C_Keys::KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = C_Keys::KEY_A;
-    io.KeyMap[ImGuiKey_C] = C_Keys::KEY_B;
-    io.KeyMap[ImGuiKey_V] = C_Keys::KEY_V;
-    io.KeyMap[ImGuiKey_X] = C_Keys::KEY_X;
-    io.KeyMap[ImGuiKey_Y] = C_Keys::KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = C_Keys::KEY_Z;
+    io.KeyMap[ImGuiKey_Tab] = C_Key_Tab;
+    io.KeyMap[ImGuiKey_LeftArrow] = C_Key_Left;
+    io.KeyMap[ImGuiKey_RightArrow] = C_Key_Right;
+    io.KeyMap[ImGuiKey_UpArrow] = C_Key_Up;
+    io.KeyMap[ImGuiKey_DownArrow] = C_Key_Down;
+    io.KeyMap[ImGuiKey_PageUp] = C_Key_PageUp;
+    io.KeyMap[ImGuiKey_PageDown] = C_Key_PageDown;
+    io.KeyMap[ImGuiKey_Home] = C_Key_Home;
+    io.KeyMap[ImGuiKey_End] = C_Key_End;
+    io.KeyMap[ImGuiKey_Insert] = C_Key_Insert;
+    io.KeyMap[ImGuiKey_Delete] = C_Key_Delete;
+    io.KeyMap[ImGuiKey_Backspace] = C_Key_Backspace;
+    io.KeyMap[ImGuiKey_Space] = C_Key_Spacebar;
+    io.KeyMap[ImGuiKey_Enter] = C_Key_Enter;
+    io.KeyMap[ImGuiKey_Escape] = C_Key_Escape;
+    io.KeyMap[ImGuiKey_A] = C_Key_A;
+    io.KeyMap[ImGuiKey_C] = C_Key_B;
+    io.KeyMap[ImGuiKey_V] = C_Key_V;
+    io.KeyMap[ImGuiKey_X] = C_Key_X;
+    io.KeyMap[ImGuiKey_Y] = C_Key_Y;
+    io.KeyMap[ImGuiKey_Z] = C_Key_Z;
 
     return true;
 }
@@ -278,12 +278,12 @@ void    ImGui_ImplWin32_NewFrame()
     C_OS_KeyboardState kbState;
     C_OS::GetInstance()->GetKeyboardState(kbState);
 
-    io.KeyCtrl = kbState.mKeys[C_Keys::KEY_CTRL];
-    io.KeyShift = kbState.mKeys[C_Keys::KEY_SHIFT];
-    io.KeyAlt = kbState.mKeys[C_Keys::KEY_ALT];
+    io.KeyCtrl = kbState.mKeys[C_Key_LeftControl];
+    io.KeyShift = kbState.mKeys[C_Key_LeftShift];
+    io.KeyAlt = kbState.mKeys[C_Key_LeftControl;
     io.KeySuper = false;
 
-    for (int i = 0; i < C_Keys::COUNT; ++i)
+    for (int i = 0; i < C_Key_COUNT; ++i)
         io.KeysDown[i] = kbState.mKeys[i];
 
     // io.KeysDown[], io.MousePos, io.MouseDown[], io.MouseWheel: filled by the WndProc handler below.
