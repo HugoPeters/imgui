@@ -84,10 +84,10 @@ bool    ImGui_ImplWin32_Init(void* hwnd)
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
     io.KeyMap[ImGuiKey_Tab] = C_Key_Tab;
-    io.KeyMap[ImGuiKey_LeftArrow] = C_Key_Left;
-    io.KeyMap[ImGuiKey_RightArrow] = C_Key_Right;
-    io.KeyMap[ImGuiKey_UpArrow] = C_Key_Up;
-    io.KeyMap[ImGuiKey_DownArrow] = C_Key_Down;
+    io.KeyMap[ImGuiKey_LeftArrow] = C_Key_LeftArrow;
+    io.KeyMap[ImGuiKey_RightArrow] = C_Key_RightArrow;
+    io.KeyMap[ImGuiKey_UpArrow] = C_Key_UpArrow;
+    io.KeyMap[ImGuiKey_DownArrow] = C_Key_DownArrow;
     io.KeyMap[ImGuiKey_PageUp] = C_Key_PageUp;
     io.KeyMap[ImGuiKey_PageDown] = C_Key_PageDown;
     io.KeyMap[ImGuiKey_Home] = C_Key_Home;
@@ -95,7 +95,7 @@ bool    ImGui_ImplWin32_Init(void* hwnd)
     io.KeyMap[ImGuiKey_Insert] = C_Key_Insert;
     io.KeyMap[ImGuiKey_Delete] = C_Key_Delete;
     io.KeyMap[ImGuiKey_Backspace] = C_Key_Backspace;
-    io.KeyMap[ImGuiKey_Space] = C_Key_Spacebar;
+    io.KeyMap[ImGuiKey_Space] = C_Key_Space;
     io.KeyMap[ImGuiKey_Enter] = C_Key_Enter;
     io.KeyMap[ImGuiKey_Escape] = C_Key_Escape;
     io.KeyMap[ImGuiKey_A] = C_Key_A;
@@ -280,7 +280,7 @@ void    ImGui_ImplWin32_NewFrame()
 
     io.KeyCtrl = kbState.mKeys[C_Key_LeftControl];
     io.KeyShift = kbState.mKeys[C_Key_LeftShift];
-    io.KeyAlt = kbState.mKeys[C_Key_LeftControl;
+    io.KeyAlt = kbState.mKeys[C_Key_LeftControl];
     io.KeySuper = false;
 
     for (int i = 0; i < C_Key_COUNT; ++i)
