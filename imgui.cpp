@@ -845,6 +845,9 @@ namespace ImGui
     bool WarAllowOnlyMenuBar = true;
 }
 
+#include "C_Base.h"
+WAR_DEOPTIMIZE
+
 
 //-------------------------------------------------------------------------
 // [SECTION] FORWARD DECLARATIONS
