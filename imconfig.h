@@ -88,10 +88,10 @@
 #define ImDrawIdx unsigned int
 
 //---- Override ImDrawCallback signature (will need to modify renderer backends accordingly)
-//struct ImDrawList;
-//struct ImDrawCmd;
-//typedef void (*MyImDrawCallback)(const ImDrawList* draw_list, const ImDrawCmd* cmd, void* my_renderer_user_data);
-//#define ImDrawCallback MyImDrawCallback
+struct ImDrawList;
+struct ImDrawCmd;
+typedef void (*BgfxImDrawCallback)(const ImDrawList* draw_list, const ImDrawCmd* cmd, void* encoder);
+#define ImDrawCallback BgfxImDrawCallback
 
 //---- Debug Tools: Macro to break in Debugger
 // (use 'Metrics->Tools->Item Picker' to pick widgets with the mouse and break into them for easy debugging.)
